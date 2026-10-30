@@ -45,6 +45,8 @@ details{margin-top:10px}summary{cursor:pointer;font-weight:600}
 #pin div{background:var(--card);border-radius:14px;padding:22px;max-width:340px;width:100%}
 #pin input{font:inherit;width:100%;padding:8px 10px;margin:10px 0;border:1px solid var(--bd);border-radius:8px}
 #msg{color:var(--mu);padding:20px 0}
+.ai{background:#fff6dd;border:2px solid var(--ac);margin-bottom:14px}
+.ai div{margin:3px 0}.ai b{display:block;margin-top:8px;color:var(--ac)}
 </style>
 </head>
 <body>
@@ -61,10 +63,10 @@ details{margin-top:10px}summary{cursor:pointer;font-weight:600}
 
 <script>
 /* ===== ตั้งค่า 2 จุดนี้ ===== */
-var API_URL='https://script.google.com/macros/s/AKfycbxkdlx5cqLmwh8-tGHI8d7urzYNygSQW9-XS72jLMZ5SRCdXDo5oq2Fq9nce6BoRvRR/exec';
+var API_URL='https://script.google.com/macros/s/AKfycbzkb569WyBcgeDsDS2nAPvVn3ouGQfLn0OfV5ClpTkcM8JCHNxATgsZbuw1j5NLZF6p/exec';
 var SHEET_URL='https://docs.google.com/spreadsheets/d/1aeIvK4T8qwGdBglxd2R1kpNIJlDRXco3DY6jpQyRrmc/edit?gid=1645695915';
 /* ========================== */
-var DATA=[],view='all',open=null,pin='',updated='';
+var DATA=[],view='all',open=null,pin='',updated='',AI=null,AIs='',aiBusy=false;
 try{pin=sessionStorage.getItem('pin')||''}catch(e){}
 var $=function(s){return document.querySelector(s)};
 var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
@@ -112,7 +114,7 @@ function render(){
  if(!rows.length){$('#app').innerHTML='<div class="card">ยังไม่มีข้อมูล</div>';return}
  var T=Q.map(function(q){return tally(rows,q.f)});
  var share=function(i,l){var x=T[i].list.filter(function(y){return y[0]===l})[0];return x?pct(x[1].length,T[i].n):0};
- var h='<div class="kpis"><div class="kpi"><b>'+rows.length+'</b><span>ผู้ตอบ'+(view==='all'?' จาก '+br.length+' สาขา':'')+'</span></div>'+
+ var h=aiBox(T,view==='all')+'<div class="kpis"><div class="kpi"><b>'+rows.length+'</b><span>ผู้ตอบ'+(view==='all'?' จาก '+br.length+' สาขา':'')+'</span></div>'+
  '<div class="kpi"><b>'+share(0,'ไม่ทราบ')+'%</b><span>ไม่ทราบนโยบายส่งฟรีกลางคืน</span></div>'+
  '<div class="kpi"><b>'+share(1,'เคยเจอและมีปัญหาบ่อย')+'%</b><span>เจอปัญหาค่าส่งบ่อย</span></div>'+
  '<div class="kpi"><b>'+share(2,'ควรมีเงื่อนไขยืดหยุ่น')+'%</b><span>อยากได้เงื่อนไขยืดหยุ่น</span></div>'+
@@ -129,12 +131,24 @@ function render(){
   '<details><summary>ดูข้อเสนอแนะทั้งหมดของแต่ละคน ('+tl.n+')</summary>'+rows.filter(function(d){return cmts(d).length}).map(function(d){return'<div class="cm"><b>'+esc(d.name)+' <small>สาขา '+esc(d.branch)+'</small></b><br>'+cmts(d).map(esc).join('<br>')+'</div>'}).join('')+'</details></div></div>';
  $('#app').innerHTML=h;$('#msg').textContent=''}
 
+function mini(t){return esc(t.replace(/\*\*/g,'')).split('\n').map(function(l){l=l.trim();return !l?'':/^#+\s/.test(l)?'<b>'+l.replace(/^#+\s*/,'')+'</b>':/^[-•*]\s/.test(l)?'<div>• '+l.slice(2)+'</div>':'<div>'+l+'</div>'}).join('')}
+function aiBox(T,all){
+ if(!all)return'';
+ if(AI&&AI.summary)return'<div class="card wide ai"><h2>สรุปจาก AI Claude: ความต้องการที่ตรงกัน</h2>'+mini(AI.summary)+'<div class="sub" style="margin-top:8px">สร้างเมื่อ '+new Date(AI.at).toLocaleString('th-TH')+' จากผู้ตอบ '+AI.n+' คน · สรุปใหม่อัตโนมัติเมื่อมีข้อมูลเปลี่ยน</div></div>';
+ var items=Q.map(function(q,i){var t=T[i];return t.n&&t.list[0]&&pct(t.list[0][1].length,t.n)>=50?'<div>• '+esc(q.t)+': '+esc(headline(t))+'</div>':''}).join('');
+ var note=!AI?'กำลังให้ Claude สรุป อาจใช้เวลาสักครู่...':AI.reason==='no_key'?'ยังไม่ได้ตั้งค่า API key ของ Claude จึงแสดงสรุปอัตโนมัติจากคะแนนโหวตแทน (ไม่ใช่ AI)':'ขณะนี้ Claude สรุปไม่ได้ จึงแสดงสรุปอัตโนมัติจากคะแนนโหวตแทน (ไม่ใช่ AI)';
+ return'<div class="card wide ai"><h2>ความต้องการที่ตรงกัน (ข้อที่เสียงส่วนใหญ่เกิน 50%)</h2>'+(items||'<div>ยังไม่มีข้อที่คนส่วนใหญ่เห็นตรงกัน</div>')+'<div class="sub" style="margin-top:8px">'+note+'</div></div>'}
+async function loadSummary(){
+ if(aiBusy)return;aiBusy=true;
+ try{var r=await fetch(API_URL+'?action=summary&pin='+encodeURIComponent(pin)),j=await r.json();
+  if(!j.error){var k=JSON.stringify(j);if(k!==AIs){AIs=k;AI=j;render()}}}catch(e){}
+ aiBusy=false}
 async function load(){
  if(/วาง_URL/.test(API_URL)){$('#msg').textContent='ยังไม่ได้ตั้งค่า API_URL ในไฟล์ index.html';return}
  try{var r=await fetch(API_URL+'?pin='+encodeURIComponent(pin)),j=await r.json();
   if(j.error==='bad_pin'){$('#pin').style.display='flex';$('#pe').textContent=pin?'รหัสไม่ถูกต้อง':'';return}
   $('#pin').style.display='none';
-  DATA=j.rows.map(function(r){return{name:r[1].trim(),branch:String(r[2]).trim(),r:r}});updated=j.updated;render()
+  DATA=j.rows.map(function(r){return{name:r[1].trim(),branch:String(r[2]).trim(),r:r}});updated=j.updated;render();loadSummary()
  }catch(e){$('#msg').textContent='โหลดข้อมูลไม่สำเร็จ กรุณากดรีเฟรช'}}
 
 document.addEventListener('click',function(e){
