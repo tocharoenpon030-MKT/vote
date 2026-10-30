@@ -45,8 +45,22 @@ details{margin-top:10px}summary{cursor:pointer;font-weight:600}
 #pin div{background:var(--card);border-radius:14px;padding:22px;max-width:340px;width:100%}
 #pin input{font:inherit;width:100%;padding:8px 10px;margin:10px 0;border:1px solid var(--bd);border-radius:8px}
 #msg{color:var(--mu);padding:20px 0}
-.ai{background:#fff6dd;border:2px solid var(--ac);margin-bottom:14px}
-.ai div{margin:3px 0}.ai b{display:block;margin-top:8px;color:var(--ac)}
+.ai{background:#fffaf0;border:2px solid var(--ac);margin-bottom:14px}
+.sbox{border-radius:10px;padding:10px 14px;margin:10px 0;border-left:6px solid}
+.sbox b{display:block;font-size:1.05em;margin-bottom:4px}.sbox div{margin:5px 0}
+.sg{background:#e3f3e8;border-color:#1f7a4d}.sg b{color:#1f7a4d}
+.sy{background:#fff1cc;border-color:#e6a817}.sy b{color:#9a6b00}
+.sb{background:#e3edfa;border-color:#2b6cb0}.sb b{color:#2b6cb0}
+.vote{margin-bottom:14px}
+.vgrid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr))}
+.vq{border:1px solid var(--bd);border-radius:12px;padding:12px;background:#fff}
+.vq>b{display:block}
+.big{font-weight:700;color:var(--ac);margin:4px 0 8px}
+.stack{display:flex;height:32px;border-radius:8px;overflow:hidden;margin-bottom:8px}
+.stack span{display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85em;min-width:0}
+.lg{all:unset;box-sizing:border-box;display:flex;gap:8px;align-items:center;width:100%;padding:5px 8px;border-radius:8px;cursor:pointer;font-size:.92em}
+.lg:hover,.lg.on{background:var(--bar)}
+.dot{width:14px;height:14px;border-radius:4px;flex:none}.lt{flex:1}
 </style>
 </head>
 <body>
@@ -63,10 +77,10 @@ details{margin-top:10px}summary{cursor:pointer;font-weight:600}
 
 <script>
 /* ===== ตั้งค่า 2 จุดนี้ ===== */
-var API_URL='https://script.google.com/macros/s/AKfycbzkb569WyBcgeDsDS2nAPvVn3ouGQfLn0OfV5ClpTkcM8JCHNxATgsZbuw1j5NLZF6p/exec';
+var API_URL='วาง_URL_WEB_APP_จาก_APPS_SCRIPT_ที่นี่';
 var SHEET_URL='https://docs.google.com/spreadsheets/d/1aeIvK4T8qwGdBglxd2R1kpNIJlDRXco3DY6jpQyRrmc/edit?gid=1645695915';
 /* ========================== */
-var DATA=[],view='all',open=null,pin='',updated='',AI=null,AIs='',aiBusy=false;
+var DATA=[],view='all',open=null,pin='',updated='';
 try{pin=sessionStorage.getItem('pin')||''}catch(e){}
 var $=function(s){return document.querySelector(s)};
 var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
@@ -131,24 +145,54 @@ function render(){
   '<details><summary>ดูข้อเสนอแนะทั้งหมดของแต่ละคน ('+tl.n+')</summary>'+rows.filter(function(d){return cmts(d).length}).map(function(d){return'<div class="cm"><b>'+esc(d.name)+' <small>สาขา '+esc(d.branch)+'</small></b><br>'+cmts(d).map(esc).join('<br>')+'</div>'}).join('')+'</details></div></div>';
  $('#app').innerHTML=h;$('#msg').textContent=''}
 
-function mini(t){return esc(t.replace(/\*\*/g,'')).split('\n').map(function(l){l=l.trim();return !l?'':/^#+\s/.test(l)?'<b>'+l.replace(/^#+\s*/,'')+'</b>':/^[-•*]\s/.test(l)?'<div>• '+l.slice(2)+'</div>':'<div>'+l+'</div>'}).join('')}
+/* ===== สรุปจาก Claude (ข้อความคงที่ แก้ไขได้ที่นี่) ===== */
+var SUM_N=34;
+var SUM=[
+ {c:'sg',t:'ความต้องการที่ตรงกัน',i:[
+  'เกือบทุกคน (30 จาก 34) ไม่ทราบนโยบายส่งฟรีช่วงกลางคืน จึงควรสื่อสารนโยบายให้ทั่วถึง',
+  'แทบทุกคนเคยเจอปัญหาค่าส่งทำให้ลูกค้าสั่งน้อยลง (33 จาก 34) และ 17 คนบอกว่าเจอบ่อย',
+  'ส่วนใหญ่ไม่เอาส่งฟรีทุกเคส แต่อยากได้ "เงื่อนไขยืดหยุ่น" (18 คน, 53%)',
+  'เกณฑ์ที่ใช้พิจารณา: ประวัติความถี่การสั่งซื้อ (21 คน, 62%) และหน้างานที่ยังไม่จบ (15 คน)',
+  'ยอดสะสม 3 เดือนที่เลือกมากที่สุดคือ 100,000 บาท (17 คน, 50%)',
+  'เห็นด้วยอย่างยิ่งกับระบบอัตโนมัติส่วนกลาง 21 คน (62%)']},
+ {c:'sy',t:'ประเด็นที่เห็นต่าง',i:[
+  'ควรส่งฟรีหรือไม่: เงื่อนไขยืดหยุ่น 18 คน เทียบกับไม่ควรฟรี เก็บตามระบบ 13 คน ฝั่งไม่ควรฟรีกังวลว่าลูกค้าจะคาดหวังซ้ำและกำไรต่อเที่ยวไม่พอ',
+  'ระบบอัตโนมัติ: 9 คนไม่เห็นด้วย ส่วนใหญ่อยากให้ดูเป็นรายเคส ให้ผู้จัดการตัดสิน หรือดูกำไรต่อเที่ยว',
+  'โควตา: 2 ครั้ง/เดือนได้เสียงมากสุดแต่ไม่ถึงครึ่ง ที่เหลือแบ่งระหว่าง 1 ครั้ง/เดือน และไม่จำกัดในช่วงเก็บงาน',
+  'ยอดสะสม: นอกจาก 100,000 บาท มี 8 คนอยากให้เป็น 300,000 บาทขึ้นไป']},
+ {c:'sb',t:'ข้อเสนอแนะที่น่านำไปพิจารณา',i:[
+  'ให้ผู้จัดการสาขามีดุลพินิจภายในกรอบที่บริษัทกำหนด เพราะรู้ระยะทางและหน้างานจริง',
+  'กำหนดรัศมีส่งฟรีในระยะใกล้ เช่น 3–5 กม.',
+  'ถ้าต้องคิดค่าส่ง ให้สมเหตุสมผล เช่น ราว 300 บาทในระยะใกล้ แทน 700 บาท',
+  'พิจารณากำไรต่อเที่ยวประกอบการตัดสินใจส่งฟรี',
+  'เน้นล็อตเก็บงานและลูกค้าประจำที่ซื้อสม่ำเสมอ พร้อมจำกัดสิทธิ์ไม่ให้ใช้บ่อย']}
+];
+var PAL=['#2b6cb0','#c2570c','#7b5ea7','#0e8a8a','#b5547a'];
+function colr(L,rank){
+ if(/^อื่น/.test(L))return'#9a9078';
+ if(/^เห็นด้วยอย่างยิ่ง/.test(L))return'#1f7a4d';
+ if(/^เห็นด้วย|^ควรจัดส่งฟรี/.test(L)||L==='ทราบ'||L==='ไม่เคยเจอ')return'#4caf7a';
+ if(/^ไม่เห็นด้วย|^ไม่ควรฟรี|^ไม่ทราบ|ปัญหาบ่อย/.test(L))return'#d64545';
+ if(/ยืดหยุ่น|จัดการได้/.test(L))return'#e6a817';
+ return PAL[rank%PAL.length]}
 function aiBox(T,all){
  if(!all)return'';
- if(AI&&AI.summary)return'<div class="card wide ai"><h2>สรุปจาก AI Claude: ความต้องการที่ตรงกัน</h2>'+mini(AI.summary)+'<div class="sub" style="margin-top:8px">สร้างเมื่อ '+new Date(AI.at).toLocaleString('th-TH')+' จากผู้ตอบ '+AI.n+' คน · สรุปใหม่อัตโนมัติเมื่อมีข้อมูลเปลี่ยน</div></div>';
- var items=Q.map(function(q,i){var t=T[i];return t.n&&t.list[0]&&pct(t.list[0][1].length,t.n)>=50?'<div>• '+esc(q.t)+': '+esc(headline(t))+'</div>':''}).join('');
- var note=!AI?'กำลังให้ Claude สรุป อาจใช้เวลาสักครู่...':AI.reason==='no_key'?'ยังไม่ได้ตั้งค่า API key ของ Claude':'ขณะนี้ Claude สรุปไม่ได้ จึงแสดงสรุปอัตโนมัติจากคะแนนโหวตแทน (ไม่ใช่ AI)';
- return'<div class="card wide ai"><h2>ความต้องการที่ตรงกัน (ข้อที่เสียงส่วนใหญ่เกิน 50%)</h2>'+(items||'<div>ยังไม่มีข้อที่คนส่วนใหญ่เห็นตรงกัน</div>')+'<div class="sub" style="margin-top:8px">'+note+'</div></div>'}
-async function loadSummary(){
- if(aiBusy)return;aiBusy=true;
- try{var r=await fetch(API_URL+'?action=summary&pin='+encodeURIComponent(pin)),j=await r.json();
-  if(!j.error){var k=JSON.stringify(j);if(k!==AIs){AIs=k;AI=j;render()}}}catch(e){}
- aiBusy=false}
+ var warn=DATA.length!==SUM_N?'<br><b style="color:#d64545">ตอนนี้มีผู้ตอบ '+DATA.length+' คน แต่ข้อความสรุปนี้เป็นของผู้ตอบ '+SUM_N+' คน (ส่วนแถบสีด้านล่างอัปเดตสดแล้ว)</b>':'';
+ var h='<div class="card wide ai"><h2>สรุปจาก AI Claude: ความต้องการที่ตรงกัน</h2>'+SUM.map(function(g){return'<div class="sbox '+g.c+'"><b>'+esc(g.t)+'</b>'+g.i.map(function(x){return'<div>• '+esc(x)+'</div>'}).join('')+'</div>'}).join('')+
+  '<div class="sub">สรุปโดย Claude จากผู้ตอบ '+SUM_N+' คน เป็นข้อความคงที่ ไม่เปลี่ยนตามโหวตใหม่'+warn+'</div></div>';
+ h+='<div class="card wide vote"><h2>ภาพรวมผลโหวตทุกข้อ (กดที่ตัวเลือกเพื่อดูว่าใครโหวต)</h2><div class="vgrid">'+Q.map(function(q,i){var t=T[i];if(!t.n)return'';
+  var top=t.list[0],rank=0,segs=t.list.map(function(x){return{l:x[0],ds:x[1],c:colr(x[0],rank++)}});
+  var stack=i===3?'':'<div class="stack">'+segs.map(function(g){return'<span style="flex:'+g.ds.length+';background:'+g.c+'" title="'+esc(g.l)+'">'+g.ds.length+'</span>'}).join('')+'</div>';
+  var leg=segs.map(function(g){var k='o'+i+'|'+g.l,pp=pct(g.ds.length,t.n);
+   return'<button class="lg'+(open===k?' on':'')+'" data-k="'+esc(k)+'"'+(i===3?' style="background:linear-gradient(90deg,'+g.c+'44 '+pp+'%,transparent '+pp+'%)"':'')+'><i class="dot" style="background:'+g.c+'"></i><span class="lt">'+esc(g.l)+'</span><span class="ct">'+g.ds.length+' คน · '+pp+'%</span></button>'+(open===k?'<div class="who">'+chips(g.ds)+'</div>':'')}).join('');
+  return'<div class="vq"><b>'+(i+1)+'. '+esc(q.t)+'</b><div class="big">'+top[1].length+' จาก '+t.n+' คน ('+pct(top[1].length,t.n)+'%) ตอบ “'+esc(top[0])+'”</div>'+stack+leg+'</div>'}).join('')+'</div></div>';
+ return h}
 async function load(){
  if(/วาง_URL/.test(API_URL)){$('#msg').textContent='ยังไม่ได้ตั้งค่า API_URL ในไฟล์ index.html';return}
  try{var r=await fetch(API_URL+'?pin='+encodeURIComponent(pin)),j=await r.json();
   if(j.error==='bad_pin'){$('#pin').style.display='flex';$('#pe').textContent=pin?'รหัสไม่ถูกต้อง':'';return}
   $('#pin').style.display='none';
-  DATA=j.rows.map(function(r){return{name:r[1].trim(),branch:String(r[2]).trim(),r:r}});updated=j.updated;render();loadSummary()
+  DATA=j.rows.map(function(r){return{name:r[1].trim(),branch:String(r[2]).trim(),r:r}});updated=j.updated;render()
  }catch(e){$('#msg').textContent='โหลดข้อมูลไม่สำเร็จ กรุณากดรีเฟรช'}}
 
 document.addEventListener('click',function(e){
