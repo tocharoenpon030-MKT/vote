@@ -1,1 +1,151 @@
-# vote
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แดชบอร์ดความคิดเห็นพนักงานขาย: นโยบายจัดส่งฟรี</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fbf5e6;--card:#fffdf6;--tx:#2b2418;--mu:#6b5f4a;--bd:#e8dcc0;--ac:#c2570c;--bar:#efe5cc;--ok:#2f6f4f;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:clamp(16px,1.1vw + 11px,19px);line-height:1.6}
+.wrap{max-width:1280px;margin:0 auto;padding:16px clamp(12px,3vw,32px) 56px}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-size:1.45em;margin:0}
+h2{font-size:1.1em;margin:0 0 8px}
+.btn,button.tab{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:999px;padding:6px 16px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
+button.tab.on{background:var(--tx);color:var(--card);border-color:var(--tx)}
+.sub{color:var(--mu);font-size:.85em}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr))}
+.kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:14px}
+.card,.kpi{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+.kpi b{display:block;font-size:1.9em;color:var(--ac);line-height:1.2}
+.kpi span{color:var(--mu);font-size:.85em}
+.card.wide{grid-column:1/-1}
+.head{background:#f6ecd0;border-left:4px solid var(--ac);border-radius:8px;padding:8px 12px;margin:0 0 10px;font-weight:600}
+.row{all:unset;box-sizing:border-box;display:grid;grid-template-columns:minmax(120px,40%) 1fr auto;gap:10px;align-items:center;width:100%;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:.92em}
+.row:hover,.row.on{background:var(--bar)}
+.tr{background:var(--bar);border-radius:6px;height:14px;overflow:hidden}
+.row.on .tr{background:#fffdf6}
+.tr i{display:block;height:100%;background:var(--ac);border-radius:6px}
+.ct{color:var(--mu);white-space:nowrap;font-variant-numeric:tabular-nums}
+.who{padding:6px 8px 10px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:#fff;border:1px solid var(--bd);border-radius:999px;padding:2px 12px;font-size:.88em}
+.chip small{color:var(--mu);margin-left:6px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9em}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--bd);vertical-align:top}
+tr.go{cursor:pointer}tr.go:hover{background:var(--bar)}
+details{margin-top:10px}summary{cursor:pointer;font-weight:600}
+.cm{border-top:1px dashed var(--bd);padding:8px 0}
+.cm b small{color:var(--mu);font-weight:400}
+#pin{position:fixed;inset:0;background:rgba(43,36,24,.55);display:none;align-items:center;justify-content:center;padding:16px}
+#pin div{background:var(--card);border-radius:14px;padding:22px;max-width:340px;width:100%}
+#pin input{font:inherit;width:100%;padding:8px 10px;margin:10px 0;border:1px solid var(--bd);border-radius:8px}
+#msg{color:var(--mu);padding:20px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div><h1>ความคิดเห็นพนักงานขาย: นโยบายจัดส่งฟรี</h1><div class="sub" id="upd">กำลังโหลดข้อมูล...</div></div>
+ <div><button class="btn" id="rf">รีเฟรช</button> <a class="btn pri" id="dt" target="_blank" rel="noopener">Data</a></div>
+</header>
+<div class="tabs" id="tabs"></div>
+<div id="msg"></div>
+<div id="app"></div>
+</div>
+<div id="pin"><div><b>กรุณาใส่รหัสเข้าดูข้อมูล</b><input id="pi" type="password" autocomplete="off"><div class="sub" id="pe"></div><button class="btn pri" id="pg">เข้าดู</button></div></div>
+
+<script>
+/* ===== ตั้งค่า 2 จุดนี้ ===== */
+var API_URL='วาง_URL_WEB_APP_จาก_APPS_SCRIPT_ที่นี่';
+var SHEET_URL='https://docs.google.com/spreadsheets/d/1aeIvK4T8qwGdBglxd2R1kpNIJlDRXco3DY6jpQyRrmc/edit?gid=1645695915';
+/* ========================== */
+var DATA=[],view='all',open=null,pin='',updated='';
+try{pin=sessionStorage.getItem('pin')||''}catch(e){}
+var $=function(s){return document.querySelector(s)};
+var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var clean=function(s){s=(s||'').trim();return /^[-–.]*$/.test(s)?'':s};
+var cmp=function(a,b){return a.localeCompare(b,'th',{numeric:true})};
+$('#dt').href=SHEET_URL;
+
+/* ----- การจัดกลุ่มคำตอบ: แต่ละข้อคืนค่าเป็นรายการป้ายกำกับ ----- */
+var Q=[
+ {t:'ทราบนโยบายส่งฟรีช่วงกลางคืนหรือไม่',f:function(r){var t=r[3]||'';return !t.trim()?[]:/^ไม่ทราบ/.test(t)?['ไม่ทราบ']:['ทราบ']}},
+ {t:'เคยเจอลูกค้าสั่งของน้อยลงเพราะค่าส่งหรือไม่',f:function(r){var t=r[4]||'';return !t.trim()?[]:/ไม่เคย/.test(t)?['ไม่เคยเจอ']:/บ่อย/.test(t)?['เคยเจอและมีปัญหาบ่อย']:['เคยเจอแต่จัดการได้บางครั้ง']}},
+ {t:'บริษัทควรส่งฟรีกรณีปูน 20 ถุง (ค่าส่ง 700 บาท) หรือไม่',f:function(r){var t=r[5]||'';return !t.trim()?[]:/ไม่ควรฟรี/.test(t)?['ไม่ควรฟรี เก็บตามเกณฑ์ระบบ']:/ยืดหยุ่น/.test(t)?['ควรมีเงื่อนไขยืดหยุ่น']:/ควรจัดส่งให้ฟรี/.test(t)?['ควรจัดส่งฟรี']:['อื่น ๆ']}},
+ {t:'ควรใช้เงื่อนไขอะไรพิจารณาส่งฟรี (เลือกได้หลายข้อ)',f:function(r){var s={};(r[7]||'').split(/,\s*/).forEach(function(p){p=p.trim();if(!p)return;s[/ยอดขายสะสม/.test(p)?'ยอดขายสะสม 3 เดือนล่าสุด':/ความถี่/.test(p)?'ประวัติความถี่ในการสั่งซื้อ':/หน้างาน/.test(p)?'หน้างานสั่งของต่อเนื่อง ยังไม่จบงาน':'อื่น ๆ']=1});return Object.keys(s)}},
+ {t:'ยอดสะสม 3 เดือน ควรเท่าไรจึงได้สิทธิ์ส่งฟรี',f:function(r){var t=r[8]||'';if(!t.trim())return[];var m=t.match(/\d{1,3}(?:,\d{3})+|\d{4,}/);return m?[(+m[0].replace(/,/g,'')).toLocaleString('en-US')+' บาท'+(/ขึ้นไป/.test(t)?' ขึ้นไป':'')]:['อื่น ๆ (ไม่ระบุ/ตามเคส)']}},
+ {t:'สิทธิ์ส่งฟรีควรให้โควตาเท่าไร',f:function(r){var t=r[9]||'';if(!t.trim())return[];if(/ไม่จำกัด/.test(t))return['ไม่จำกัดครั้ง (ช่วงเก็บงาน)'];var m=t.match(/(\d+)\s*ครั้ง/);return m?[m[1]+' ครั้ง / เดือน']:['อื่น ๆ (ดุลพินิจ/ตามเคส)']}},
+ {t:'เห็นด้วยไหมกับระบบอัตโนมัติส่วนกลางปลดล็อกสิทธิ์ส่งฟรี',f:function(r){var t=(r[10]||'').trim();return !t?[]:/^เห็นด้วยอย่างยิ่ง/.test(t)?['เห็นด้วยอย่างยิ่ง']:/^ไม่เห็นด้วย/.test(t)?['ไม่เห็นด้วย']:/^เห็นด้วย/.test(t)?['เห็นด้วย']:['อื่น ๆ / ตอบเอง']}}
+];
+var THEMES=[
+ ['ให้ผู้จัดการสาขามีดุลพินิจ',/ดุลพินิจ|ดุลยพินิจ|ดุจพินิจ|ผจก|ผู้จัดการ/],
+ ['กำหนดระยะทาง/รัศมีส่งฟรี',/กิโล|กม|ระยะ/],
+ ['ค่าส่งควรสมเหตุสมผล ไม่แพง',/สมเหตุสมผล|ไม่แพง|รับได้|ไม่ต้องถึง/],
+ ['ดูกำไรต่อเที่ยว',/กำไร/],
+ ['กำหนดขั้นต่ำต่อบิล/เที่ยว',/ต่อบิล|ขั้นต่ำ|ต่อเที่ยว|\d{4}\s*บาท|\d{4}ขึ้นไป|\d{4}-\d{4}/],
+ ['ดูเป็นรายเคส',/เคส/],
+ ['เน้นล็อตเก็บงาน/ลูกค้าประจำ',/เก็บงาน|ลูกค้าประจำ|สม่ำเสมอ/],
+ ['ควรจำกัดสิทธิ์ ไม่ให้ใช้บ่อย',/ข้อจำกัด|ไม่ให้บ่อย|ไม่บ่อย|ต้องไม่ให้/]
+];
+function cmts(d){return [clean(d.r[6]),clean(d.r[11])].filter(Boolean)}
+
+function tally(rows,f){var m={},n=0;rows.forEach(function(d){var l=f(d.r);if(l.length)n++;l.forEach(function(x){(m[x]=m[x]||[]).push(d)})});
+ var list=Object.keys(m).map(function(k){return[k,m[k]]}).sort(function(a,b){return (/^อื่น/.test(a[0])-/^อื่น/.test(b[0]))||b[1].length-a[1].length});return{list:list,n:n}}
+function pct(a,b){return b?Math.round(a/b*100):0}
+function headline(t){if(!t.n)return'ยังไม่มีข้อมูล';var a=t.list[0],p=pct(a[1].length,t.n),s=(p>50?'ส่วนใหญ่ ':'มากที่สุด ')+'"'+a[0]+'" '+a[1].length+' จาก '+t.n+' คน ('+p+'%)';
+ if(t.list[1])s+=' รองลงมา "'+t.list[1][0]+'" '+t.list[1][1].length+' คน';return s}
+function chips(ds){return ds.map(function(d){return'<span class="chip">'+esc(d.name)+(view==='all'?'<small>สาขา '+esc(d.branch)+'</small>':'')+'</span>'}).join('')}
+function bars(key,t){return t.list.map(function(x){var k=key+'|'+x[0],p=pct(x[1].length,t.n);
+ return'<button class="row'+(open===k?' on':'')+'" data-k="'+esc(k)+'"><span>'+esc(x[0])+'</span><span class="tr"><i style="width:'+p+'%"></i></span><span class="ct">'+x[1].length+' คน · '+p+'%</span></button>'+(open===k?'<div class="who">'+chips(x[1])+'</div>':'')}).join('')}
+
+function render(){
+ var br=Object.keys(DATA.reduce(function(o,d){o[d.branch]=1;return o},{})).sort(cmp);
+ if(view!=='all'&&br.indexOf(view)<0)view='all';
+ var rows=view==='all'?DATA:DATA.filter(function(d){return d.branch===view});
+ $('#tabs').innerHTML='<button class="tab'+(view==='all'?' on':'')+'" data-v="all">ทุกสาขา ('+DATA.length+')</button>'+br.map(function(b){var c=DATA.filter(function(d){return d.branch===b}).length;return'<button class="tab'+(view===b?' on':'')+'" data-v="'+esc(b)+'">สาขา '+esc(b)+' ('+c+')</button>'}).join('');
+ $('#upd').textContent=(view==='all'?'ภาพรวมทุกสาขา':'สาขา '+view)+' · ผู้ตอบ '+rows.length+' คน · อัปเดตล่าสุด '+new Date(updated).toLocaleString('th-TH');
+ if(!rows.length){$('#app').innerHTML='<div class="card">ยังไม่มีข้อมูล</div>';return}
+ var T=Q.map(function(q){return tally(rows,q.f)});
+ var share=function(i,l){var x=T[i].list.filter(function(y){return y[0]===l})[0];return x?pct(x[1].length,T[i].n):0};
+ var h='<div class="kpis"><div class="kpi"><b>'+rows.length+'</b><span>ผู้ตอบ'+(view==='all'?' จาก '+br.length+' สาขา':'')+'</span></div>'+
+ '<div class="kpi"><b>'+share(0,'ไม่ทราบ')+'%</b><span>ไม่ทราบนโยบายส่งฟรีกลางคืน</span></div>'+
+ '<div class="kpi"><b>'+share(1,'เคยเจอและมีปัญหาบ่อย')+'%</b><span>เจอปัญหาค่าส่งบ่อย</span></div>'+
+ '<div class="kpi"><b>'+share(2,'ควรมีเงื่อนไขยืดหยุ่น')+'%</b><span>อยากได้เงื่อนไขยืดหยุ่น</span></div>'+
+ '<div class="kpi"><b>'+share(6,'เห็นด้วยอย่างยิ่ง')+'%</b><span>เห็นด้วยอย่างยิ่งกับระบบอัตโนมัติ</span></div></div>';
+ h+='<div class="card wide" style="margin-bottom:14px"><h2>สรุปภาพรวม'+(view==='all'?'ทุกสาขา':' สาขา '+esc(view))+'</h2>'+Q.map(function(q,i){return'<div class="cm"><b>'+(i+1)+'. '+esc(q.t)+'</b><br>'+esc(headline(T[i]))+'</div>'}).join('')+'</div>';
+ if(view==='all'&&br.length>1){h+='<div class="card wide" style="margin-bottom:14px"><h2>เปรียบเทียบรายสาขา (กดแถวเพื่อดูสาขานั้น)</h2><div class="scroll"><table><tr><th>สาขา</th><th>ผู้ตอบ</th><th>ควรส่งฟรีไหม</th><th>ยอดสะสมที่เลือกมากสุด</th><th>โควตาที่เลือกมากสุด</th><th>ระบบอัตโนมัติ</th></tr>'+
+  br.map(function(b){var rr=DATA.filter(function(d){return d.branch===b}),t=function(i){var x=tally(rr,Q[i].f);return x.n?esc(x.list[0][0])+' ('+pct(x.list[0][1].length,x.n)+'%)':'-'};
+  return'<tr class="go" data-v="'+esc(b)+'"><td>สาขา '+esc(b)+'</td><td>'+rr.length+'</td><td>'+t(2)+'</td><td>'+t(4)+'</td><td>'+t(5)+'</td><td>'+t(6)+'</td></tr>'}).join('')+'</table></div></div>'}
+ h+='<div class="grid">'+Q.map(function(q,i){return'<div class="card"><h2>'+(i+1)+'. '+esc(q.t)+'</h2><div class="head">'+esc(headline(T[i]))+'</div>'+bars('q'+i,T[i])+'</div>'}).join('');
+ var m={};
+ rows.forEach(function(d){var s=cmts(d).join(' ');THEMES.forEach(function(x){if(x[1].test(s))(m[x[0]]=m[x[0]]||[]).push(d)})});
+ var tl={list:Object.keys(m).map(function(k){return[k,m[k]]}).sort(function(a,b){return b[1].length-a[1].length}),n:rows.filter(function(d){return cmts(d).length}).length};
+ h+='<div class="card wide"><h2>8. ข้อเสนอแนะเพิ่มเติม</h2><div class="head">'+(tl.n?esc(headline(tl))+' (นับจากผู้ที่เขียนข้อเสนอแนะ '+tl.n+' คน)':'ยังไม่มีข้อเสนอแนะ')+'</div>'+bars('s',tl)+
+  '<details><summary>ดูข้อเสนอแนะทั้งหมดของแต่ละคน ('+tl.n+')</summary>'+rows.filter(function(d){return cmts(d).length}).map(function(d){return'<div class="cm"><b>'+esc(d.name)+' <small>สาขา '+esc(d.branch)+'</small></b><br>'+cmts(d).map(esc).join('<br>')+'</div>'}).join('')+'</details></div></div>';
+ $('#app').innerHTML=h;$('#msg').textContent=''}
+
+async function load(){
+ if(/วาง_URL/.test(API_URL)){$('#msg').textContent='ยังไม่ได้ตั้งค่า API_URL ในไฟล์ index.html';return}
+ try{var r=await fetch(API_URL+'?pin='+encodeURIComponent(pin)),j=await r.json();
+  if(j.error==='bad_pin'){$('#pin').style.display='flex';$('#pe').textContent=pin?'รหัสไม่ถูกต้อง':'';return}
+  $('#pin').style.display='none';
+  DATA=j.rows.map(function(r){return{name:r[1].trim(),branch:String(r[2]).trim(),r:r}});updated=j.updated;render()
+ }catch(e){$('#msg').textContent='โหลดข้อมูลไม่สำเร็จ กรุณากดรีเฟรช'}}
+
+document.addEventListener('click',function(e){
+ var v=e.target.closest('[data-v]'),k=e.target.closest('[data-k]');
+ if(v){view=v.dataset.v;open=null;try{location.hash=/^[\w-]+$/.test(view)?'b-'+view:'all'}catch(x){}render();scrollTo(0,0)}
+ else if(k){open=open===k.dataset.k?null:k.dataset.k;render()}});
+$('#rf').onclick=load;
+$('#pg').onclick=function(){pin=$('#pi').value;try{sessionStorage.setItem('pin',pin)}catch(e){}load()};
+$('#pi').onkeydown=function(e){if(e.key==='Enter')$('#pg').click()};
+(function(){var h=location.hash.replace('#','');if(/^b-/.test(h))view=h.slice(2)})();
+load();setInterval(load,60000);
+</script>
+</body>
+</html>
