@@ -136,7 +136,7 @@ function aiBox(T,all){
  if(!all)return'';
  if(AI&&AI.summary)return'<div class="card wide ai"><h2>สรุปจาก AI Claude: ความต้องการที่ตรงกัน</h2>'+mini(AI.summary)+'<div class="sub" style="margin-top:8px">สร้างเมื่อ '+new Date(AI.at).toLocaleString('th-TH')+' จากผู้ตอบ '+AI.n+' คน · สรุปใหม่อัตโนมัติเมื่อมีข้อมูลเปลี่ยน</div></div>';
  var items=Q.map(function(q,i){var t=T[i];return t.n&&t.list[0]&&pct(t.list[0][1].length,t.n)>=50?'<div>• '+esc(q.t)+': '+esc(headline(t))+'</div>':''}).join('');
- var note=!AI?'กำลังให้ Claude สรุป อาจใช้เวลาสักครู่...':AI.reason==='no_key'?'ยังไม่ได้ตั้งค่า API key ของ Claude จึงแสดงสรุปอัตโนมัติจากคะแนนโหวตแทน (ไม่ใช่ AI)':'ขณะนี้ Claude สรุปไม่ได้ จึงแสดงสรุปอัตโนมัติจากคะแนนโหวตแทน (ไม่ใช่ AI)';
+ var note=!AI?'กำลังให้ Claude สรุป อาจใช้เวลาสักครู่...':AI.reason==='no_key'?'ยังไม่ได้ตั้งค่า API key ของ Claude':'ขณะนี้ Claude สรุปไม่ได้ จึงแสดงสรุปอัตโนมัติจากคะแนนโหวตแทน (ไม่ใช่ AI)';
  return'<div class="card wide ai"><h2>ความต้องการที่ตรงกัน (ข้อที่เสียงส่วนใหญ่เกิน 50%)</h2>'+(items||'<div>ยังไม่มีข้อที่คนส่วนใหญ่เห็นตรงกัน</div>')+'<div class="sub" style="margin-top:8px">'+note+'</div></div>'}
 async function loadSummary(){
  if(aiBusy)return;aiBusy=true;
